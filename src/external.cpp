@@ -142,6 +142,18 @@ extern "C" {
         END_RCPP;
     }
 
+    SEXP glm_setSigma(SEXP ptr_, SEXP sigma) {
+        BEGIN_RCPP;
+        XPtr<glmResp>(ptr_)->setSigma(::Rf_asReal(sigma));
+        END_RCPP;
+    }
+
+    SEXP glm_sigma(SEXP ptr_) {
+        BEGIN_RCPP;
+        return ::Rf_ScalarReal(XPtr<glmResp>(ptr_)->sigma());
+        END_RCPP;
+    }
+
     SEXP glm_sqrtWrkWt(SEXP ptr_) {
         BEGIN_RCPP;
         return wrap(XPtr<glmResp>(ptr_)->sqrtWrkWt());
@@ -1020,6 +1032,7 @@ static R_CallMethodDef CallEntries[] = {
     CALLDEF(glm_Create, 10),    // generate external pointer
 
     CALLDEF(glm_setN, 2),       // setters
+    CALLDEF(glm_setSigma,       2),
     CALLDEF(glm_setTheta,       2),
 
     CALLDEF(glm_aic,            1), // getters
@@ -1028,6 +1041,7 @@ static R_CallMethodDef CallEntries[] = {
     CALLDEF(glm_link,           1),
     CALLDEF(glm_muEta,          1),
     CALLDEF(glm_resDev,         1),
+    CALLDEF(glm_sigma,          1),
     CALLDEF(glm_sqrtWrkWt,      1),
     CALLDEF(glm_theta,          1),
     CALLDEF(glm_variance,       1),

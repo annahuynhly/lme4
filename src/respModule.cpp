@@ -118,7 +118,8 @@ namespace lme4 {
         : lmResp(y, weights, offset, mu, sqrtXwt, sqrtrwt, wtres),
           d_fam(fam),
           d_eta(as<MVec>(eta)),
-          d_n(as<MVec>(n)) {
+          d_n(as<MVec>(n)),
+          d_sigma(1.0) {
     }
 
     double  glmResp::aic() const {
@@ -155,11 +156,20 @@ namespace lme4 {
                        muEta().minCoeff() <<
                        " min weights: " << d_weights.array().minCoeff() <<
                        std::endl;
-        return muEta() * (d_weights.array() / variance()).sqrt();
+        return muEta() * (d_weights.array() / variance()).sqrt() / d_sigma;
     }
 
     double glmResp::Laplace(double ldL2, double ldRX2, double sqrL) const {
-        return ldL2 + sqrL + aic();
+        double criterion = ldL2 + sqrL + aic();
+        // For scale families (Gaussian, Gamma, inverse.Gaussian) the aic()
+        // call already includes +2 for the dispersion parameter. Since
+        // npar.merMod() also counts the scale via useSc, we subtract 2 here
+        // to avoid double-counting the dispersion in AIC/logLik.
+        const std::string& fam = family();
+        if (fam == "gaussian" || fam == "Gamma" || fam == "inverse.gaussian") {
+            criterion -= 2.0;
+        }
+        return criterion;
     }
 
     double glmResp::resDev() const {
@@ -178,7 +188,7 @@ namespace lme4 {
 
     double glmResp::updateWts() {
         d_sqrtrwt = (d_weights.array() / variance()).sqrt();
-        d_sqrtXwt = muEta() * d_sqrtrwt.array();
+        d_sqrtXwt = muEta() * d_sqrtrwt.array() / d_sigma;
         return updateWrss();
     }
 

@@ -88,6 +88,8 @@ namespace lme4 {
     protected:
         glmFamily  d_fam;
         MVec       d_eta, d_n;
+        double     d_sigma; /**< dispersion square root (sigma) for scale families;
+                             * equals 1 for families without a scale parameter */
     public:
         glmResp(Rcpp::List,SEXP,SEXP,SEXP,SEXP,SEXP,SEXP,SEXP,SEXP,SEXP);
 
@@ -108,12 +110,16 @@ namespace lme4 {
         double                aic() const;
         double            Laplace(double,double,double) const;
         double             resDev() const;
+        double              sigma() const {return d_sigma;}
+                                /**< return the current value of sigma (dispersion square root) */
         double              theta() const {return d_fam.theta();}
                                 //< negative binomial distribution only
         double           updateMu(const Eigen::VectorXd&);
         double          updateWts();
 
         void                 setN(const Eigen::VectorXd&);
+        void             setSigma(const double& sigma) {d_sigma = sigma;}
+                                /**< set a new value of sigma for the PIRLS working weights */
         void             setTheta(const double& ntheta) {d_fam.setTheta(ntheta);}
                                 // negative binomial distribution only
     };
