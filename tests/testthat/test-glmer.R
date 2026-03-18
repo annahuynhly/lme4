@@ -77,8 +77,9 @@ test_that("glmer", {
                          family = binomial,
                          control=glmerControl(check.nlev.gtreq.5="warning")),
                    "< 5 sampled levels")
-    expect_warning(fm1. <- glmer(Reaction ~ Days + (Days|Subject), sleepstudy),
-                   regexp="calling .* with family=gaussian .* as a shortcut")
+    ## glmer(family=gaussian) should return glmerMod (no longer redirects to lmer)
+    fm1. <- glmer(Reaction ~ Days + (Days|Subject), sleepstudy)
+    expect_is(fm1., "glmerMod")
     options(warn=2)
     options(glmerControl=list(junk=1,check.conv.grad="ignore"))
     expect_warning(glmer(z~ 1|f, d, family=binomial),

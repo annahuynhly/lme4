@@ -21,6 +21,11 @@
     \itemize{
       \item add support for parallelization via the \code{future} framework by setting
       argument \code{parallel} to \code{"future"}.
+      \item \code{glmer(..., family=gaussian)} no longer redirects to
+      \code{lmer}; it now uses the full GLMM machinery and returns a
+      \code{glmerMod} object. This also enables
+      \code{glmer(..., family=gaussian(link="log"))} and other
+      non-identity Gaussian links to work consistently.
     } % itemize
   } % new features
   \subsection{USER-VISIBLE CHANGES}{

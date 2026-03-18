@@ -19,12 +19,11 @@ oldOpts <- options(digits=2)
 (fm2 <- lmer(Reaction ~ Days + (1|Subject) + (0+Days|Subject), sleepstudy))
 anova(fm1, fm2)
 
-## Now works for glmer
-fm1. <- suppressWarnings(glmer(Reaction ~ Days + (Days|Subject), sleepstudy))
-## default family=gaussian/identity link -> automatically calls  lmer()  (but with a warning)
-## hack call -- comes out unimportantly different
-fm1.@call[[1]] <- quote(lmer)
-stopifnot(all.equal(fm1, fm1.))
+## Now works for glmer - glmer(family=gaussian) returns glmerMod using GLMM machinery
+fm1. <- glmer(Reaction ~ Days + (Days|Subject), sleepstudy)
+## glmer returns glmerMod; fixed effects should be approximately equal to lmer
+stopifnot(is(fm1., "glmerMod"))
+stopifnot(all.equal(fixef(fm1), fixef(fm1.), tolerance=1e-4))
 ## Test against previous version in lmer1 (using bobyqa for consistency)
 #(fm1. <- lmer1(Reaction ~ Days + (Days|Subject), sleepstudy, opt = "bobyqa"))
 #stopifnot(all.equal(fm1@devcomp$cmp['REML'], fm1.@devcomp$cmp['REML']),

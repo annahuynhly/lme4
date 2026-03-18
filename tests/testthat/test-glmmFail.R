@@ -15,16 +15,14 @@ test_that("glmer", {
     expect_error(glmer(cbind(incidence, size - incidence) ~ period + (1 | herd),
                        family = binomial, data = cbpp, REML=TRUE),
                    "unused argument.*REML")
-    expect_warning(glmer(Reaction ~ Days + (Days|Subject), sleepstudy),
-                   "calling glmer.*family=gaussian.*deprecated")
-    expect_warning(glmer(Reaction ~ Days + (Days|Subject), sleepstudy, family=gaussian),
-                   "calling glmer.*family=gaussian.*deprecated")
-    m3 <- suppressWarnings(glmer(Reaction ~ Days + (Days|Subject), sleepstudy))
+    ## glmer(family=gaussian) should now return glmerMod (using full GLMM machinery)
+    m3 <- glmer(Reaction ~ Days + (Days|Subject), sleepstudy)
     m4 <- lmer(Reaction ~ Days + (Days|Subject), sleepstudy)
-    m5 <- suppressWarnings(glmer(Reaction ~ Days + (Days|Subject), sleepstudy, family=gaussian))
-    expect_equal(fixef(m3),fixef(m5))
-    m3@call[[1]] <- m5@call[[1]] <- quote(lmer)  ## hack call
-    expect_equal(m3,m4)
-    expect_equal(m3,m5)
+    m5 <- glmer(Reaction ~ Days + (Days|Subject), sleepstudy, family=gaussian)
+    expect_is(m3, "glmerMod")
+    expect_is(m5, "glmerMod")
+    ## fixed effects should be approximately equal to lmer results
+    expect_equal(fixef(m3), fixef(m4), tolerance = 1e-4)
+    expect_equal(fixef(m3), fixef(m5))
 })
 

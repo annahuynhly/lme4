@@ -116,21 +116,10 @@ glmer <- function(formula, data=NULL
     }
     mc <- mcout <- match.call()
 
-    ## family-checking code duplicated here and in glFormula (for now) since
-    ## we really need to redirect at this point; eventually deprecate formally
-    ## and clean up
+    ## family-checking code duplicated here and in glFormula (for now)
     if (is.character(family))
         family <- get(family, mode = "function", envir = parent.frame(2))
     if( is.function(family)) family <- family()
-    if (isTRUE(all.equal(family, gaussian()))) {
-        ## redirect to lmer (with warning)
-        warning("calling glmer() with family=gaussian (identity link) as a shortcut to lmer() is deprecated;",
-                " please call lmer() directly")
-        mc[[1]] <- quote(lme4::lmer)
-        mc["family"] <- NULL            # to avoid an infinite loop
-        return(eval(mc, parent.frame()))
-    }
-
     ## see https://github.com/lme4/lme4/issues/50
     ## parse the formula and data
     mc[[1]] <- quote(lme4::glFormula)

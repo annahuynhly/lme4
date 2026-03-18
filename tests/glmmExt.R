@@ -20,7 +20,7 @@ d <- gSim()
 dgl <- gSim(dInitial = d, family = Gamma(link = log))
 ## Poisson, log link
 dP <- gSim(dInitial = d, family = poisson())
-##  Gaussian, log link --- need to use a non-identity link, otherwise glmer calls lmer
+##  Gaussian, log link --- eta = log(mu) :
 dG <- gSim(dInitial = d, family = gaussian(link = log), sd = 2)
 ## Gaussian with inverse link :     (sd small enough to avoid negative values) :
 dGi <- gSim(dInitial = d, family = gaussian(link = inverse), sd = 0.01)
