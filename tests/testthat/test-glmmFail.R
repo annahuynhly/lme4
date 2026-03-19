@@ -16,11 +16,14 @@ test_that("glmer", {
                        family = binomial, data = cbpp, REML=TRUE),
                    "unused argument.*REML")
     ## glmer(family=gaussian) should now return glmerMod (using full GLMM machinery)
+    ## and should NOT produce a singular fit message (warm start from lmer avoids this)
     m3 <- glmer(Reaction ~ Days + (Days|Subject), sleepstudy)
     m4 <- lmer(Reaction ~ Days + (Days|Subject), sleepstudy)
     m5 <- glmer(Reaction ~ Days + (Days|Subject), sleepstudy, family=gaussian)
     expect_is(m3, "glmerMod")
     expect_is(m5, "glmerMod")
+    expect_false(isSingular(m3), info="gaussian/identity glmer should not be singular")
+    expect_false(isSingular(m5), info="gaussian/identity glmer should not be singular")
     ## fixed effects should be approximately equal to lmer results
     expect_equal(fixef(m3), fixef(m4), tolerance = 1e-4)
     expect_equal(fixef(m3), fixef(m5))
