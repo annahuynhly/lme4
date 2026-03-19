@@ -422,3 +422,29 @@ test_that("turn off conv checking for npara > check.conv.nparmax", {
   expect_null(mod2@optinfo$conv$lme4)
 })
 
+test_that("as.function works for GLMMs (GitHub issue)", {
+    ## as.function(glmerMod) should produce a deviance function like update(., devFunOnly=TRUE)
+    gm1 <- glmer(cbind(incidence, size - incidence) ~ period + (1 | herd),
+                 family = binomial, data = cbpp)
+    ## as.function should not error
+    f1 <- as.function(gm1)
+    expect_is(f1, "function")
+    ## the deviance function should return a scalar numeric value
+    par1 <- getME(gm1, "theta")
+    val1 <- f1(par1)
+    expect_true(is.numeric(val1) && length(val1) == 1L)
+
+    ## result should match update(., devFunOnly = TRUE)
+    df1 <- update(gm1, devFunOnly = TRUE)
+    expect_equal(val1, df1(par1), tolerance = 1e-6)
+
+    ## also test with nAGQ = 0
+    gm0 <- glmer(cbind(incidence, size - incidence) ~ period + (1 | herd),
+                 family = binomial, data = cbpp, nAGQ = 0L)
+    f0 <- as.function(gm0)
+    expect_is(f0, "function")
+    par0 <- getME(gm0, "theta")
+    val0 <- f0(par0)
+    expect_true(is.numeric(val0) && length(val0) == 1L)
+})
+
