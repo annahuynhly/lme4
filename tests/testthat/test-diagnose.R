@@ -98,6 +98,15 @@ test_that("diagnose detects large Z-statistics when threshold is lowered", {
     expect_true(any(grepl("Z-statistics", out)))
 })
 
+test_that("diagnose z-statistics include random-effects theta parameters", {
+    fm1 <- lmer(Reaction ~ Days + (Days | Subject), sleepstudy)
+    out <- cap_diagnose(fm1, check_coefs = FALSE, check_hessian = FALSE,
+                        check_scales = FALSE, big_zstat = 5, explain = FALSE)
+    th_names <- names(getME(fm1, "theta"))
+    expect_true(any(vapply(th_names, function(nm) any(grepl(nm, out, fixed = TRUE)),
+                           logical(1))))
+})
+
 test_that("diagnose does NOT flag small Z-statistics for check_zstats", {
     fm1 <- lmer(Reaction ~ Days + (Days | Subject), sleepstudy)
     ## With a very high threshold nobody should be flagged

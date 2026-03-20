@@ -44,8 +44,10 @@ diagnose(fit,
     checked; for LMMs (or GLMMs with other links) only random-effects
     (theta) parameters are checked.}
   \item{check_zstats}{(logical) identify parameters with unusually large
-    Z-statistics (ratio of estimate to standard error)?  Identifies
-    likely failures of Wald confidence intervals/p-values.}
+    Z-statistics (ratio of estimate to standard error)? Checks fixed
+    effects and, when available, random-effects parameters via the
+    optimization Hessian; identifies likely failures of Wald confidence
+    intervals/p-values.}
   \item{check_hessian}{(logical) identify non-positive-definite Hessian
     components?  Requires that the model was fitted with
     \code{calc.derivs=TRUE} (the default for smaller models).}

@@ -32,8 +32,9 @@
 ##'   response. May produce false positives if predictor variables have
 ##'   extremely large scales.
 ##' @param check_zstats (logical) identify parameters with unusually large
-##'   Z-statistics (ratio of estimate to standard error)?  Identifies
-##'   likely failures of Wald confidence intervals/p-values.
+##'   Z-statistics (ratio of estimate to standard error)?  Checks fixed effects
+##'   and, when available, random-effects parameters via the optimization
+##'   Hessian; identifies likely failures of Wald confidence intervals/p-values.
 ##' @param check_hessian (logical) identify non-positive-definite Hessian
 ##'   components?  Requires that the model was fitted with
 ##'   \code{calc.derivs=TRUE} (the default for smaller models).
@@ -143,31 +144,53 @@ diagnose <- function(fit,
 
     ## --- Check Z-statistics ---
     if (check_zstats) {
+        z <- numeric(0)
+        derivs <- fit@optinfo$derivs
+
+        ## fixed effects (always available if vcov is estimable)
         vv <- tryCatch(as.matrix(vcov(fit)), error = function(e) NULL)
         if (!is.null(vv) && nrow(vv) > 0) {
             se <- sqrt(diag(vv))
-            z <- ff / se
-            bigz <- z[!is.na(z) & abs(z) > big_zstat]
-            if (length(bigz) > 0) {
-                model_OK <- FALSE
-                cat(sprintf("Unusually large Z-statistics (|x|>%g):\n\n", big_zstat))
-                print(bigz)
-                cat("\n")
-                prt_explain(
-                    "Large Z-statistics (estimate/std. error) suggest a possible ",
-                    "failure of the Wald approximation - often associated with ",
-                    "parameters near the boundary of their feasible range ",
-                    "(e.g. random-effects standard deviations approaching 0). ",
-                    "While Wald p-values and standard errors may be unreliable, ",
-                    "likelihood ratio tests (e.g. from drop1()) are probably still OK."
-                )
+            z <- c(z, ff / se)
+        }
+
+        ## random-effects (theta) parameters from optimization Hessian
+        ## this mirrors glmmTMB::diagnose() behavior more closely, where
+        ## random-effects scale parameters are also screened for large z-stats
+        H <- if (!is.null(derivs)) derivs$Hessian else NULL
+        if (!is.null(H)) {
+            Vpar <- tryCatch(2 * solve(H), error = function(e) NULL)
+            if (!is.null(Vpar) && nrow(Vpar) >= n_theta) {
+                dV <- diag(Vpar)[seq_len(n_theta)]
+                se_theta <- rep(NA_real_, n_theta)
+                ok <- is.finite(dV) & dV > 0
+                se_theta[ok] <- sqrt(dV[ok])
+                z_theta <- theta / se_theta
+                z <- c(z, z_theta)
             }
+        }
+
+        bigz <- z[!is.na(z) & abs(z) > big_zstat]
+        if (length(bigz) > 0) {
+            model_OK <- FALSE
+            cat(sprintf("Unusually large Z-statistics (|x|>%g):\n\n", big_zstat))
+            print(bigz)
+            cat("\n")
+            prt_explain(
+                "Large Z-statistics (estimate/std. error) suggest a possible ",
+                "failure of the Wald approximation - often associated with ",
+                "parameters near the boundary of their feasible range ",
+                "(e.g. random-effects standard deviations approaching 0). ",
+                "While Wald p-values and standard errors may be unreliable, ",
+                "likelihood ratio tests (e.g. from drop1()) are probably still OK."
+            )
         }
     }
 
     ## --- Check Hessian ---
     if (check_hessian) {
-        H <- fit@optinfo$derivs$Hessian
+        derivs <- fit@optinfo$derivs
+        H <- if (!is.null(derivs)) derivs$Hessian else NULL
         if (is.null(H)) {
             cat(paste0(
                 "Hessian not available; skipping Hessian check.\n",
