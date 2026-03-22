@@ -113,6 +113,25 @@ if(FALSE) {
     }
 })
 
+test_that("summary handles singular lmList groups", {
+    data(Pixel, package = "nlme")
+    p2 <- subset(Pixel, Dog %in% c(7, 8, 9))
+    p3 <- subset(Pixel, Dog %in% c(7, 8))
+
+    L2 <- lmList(pixel ~ day + I(day^2) | Dog, p2)
+    L3 <- lmList(pixel ~ day + I(day^2) | Dog, p3)
+
+    s2 <- summary(L2)
+    s3 <- summary(L3)
+
+    expect_s3_class(s2, "summary.lmList")
+    expect_s3_class(s3, "summary.lmList")
+    expect_identical(dim(s2$coefficients), c(3L, 4L, 3L))
+    expect_identical(dim(s3$coefficients), c(2L, 4L, 3L))
+    expect_false(any(is.na(s3$coefficients)))
+    expect_true(any(is.na(s2$coefficients["9", , ])))
+})
+
 test_that("NA,weights,offsets", {
 
     ## from GH #320

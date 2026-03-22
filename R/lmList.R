@@ -424,6 +424,103 @@ formula.lmList4 <- function(x, ...) structure(x@call[["formula"]], class = "form
 ##' Important as auxiliary method for many of the nlme-imported methods:
 getGroups.lmList4 <- function(object, ...) object@groups
 
+## local copy of summary method to avoid nlme::summary.lmList failures
+## with singular fits when assembling coefficient/covariance arrays
+summary.lmList4 <-
+    function(object, pool = attr(object, "pool"), ...)
+{
+    to.3d.array <-
+        ## Convert the list to a 3d array watching for null elements
+        function(lst, template) {
+          if (!is.matrix(template))
+            return(lst)
+
+          ## Make empty array val[,,] and then fill it  -----
+          dnames <- dimnames(template)
+          use.i <- which(lengths(lst) > 0)
+          ## TODO? just   identical(dnames[[1]], dnames[[2]]) :
+          if (length(dnames[[1]]) == length(dnames[[2]]) &&
+              all(dnames[[1]] == dnames[[2]])) { ## symmetric
+            val <- array(NA_real_, dim=c(length(cfNms), length(cfNms), length(lst)),
+                         dimnames=list(cfNms, cfNms, names(lst)))
+            for (ii in use.i) {
+              use <- dimnames(lst[[ii]])[[1]]
+              val[use, use, ii] <- lst[[ii]]
+            }
+          } else {
+            val <- array(NA_real_, dim=c(length(cfNms), dim(template)[2], length(lst)),
+                         dimnames=list(cfNms, dnames[[2]], names(lst)))
+            for (ii in use.i) {
+              use <- dimnames(lst[[ii]])[[1]]
+              val[use, , ii] <- lst[[ii]]
+            }
+          }
+          aperm(val, 3:1)
+        }
+    to.2d.array <-
+        ## Convert the list to a 2d array watching for null elements
+        function(lst, template)
+        {
+            if(is.null(template)) return(lst)
+            template <- as.vector(template)
+            val <- t(array(unlist(lapply(lst, function(el) if(is.null(el))
+                                                             template else el)),
+                           c(length(template), length(lst)),
+                           list(names(template), names(lst))))
+            val[vapply(lst, is.null, NA), ] <- NA
+            val
+        }
+    ## Create a summary by applying summary to each component of the list
+    sum.lst <- lapply(object, function(el) if(!is.null(el)) summary(el))
+    nonNull <- !vapply(sum.lst, is.null, NA)
+    if(!any(nonNull)) return(NULL)
+    template <- sum.lst[[match(TRUE, nonNull)]] # the first one
+    val <- as.list(setNames(nm = names(template)))
+    for (i in names(template)) {
+        val[[i]] <- lapply(sum.lst, `[[`, i)
+        class(val[[i]]) <- "listof"
+    }
+    ## complete set of coefs [only used in to.3d.array()]
+    cfNms <-
+      unique(unlist(lapply(sum.lst[nonNull],
+                           function(x) dimnames(x[['coefficients']])[[1]])))
+    ## re-arrange the matrices into 3d arrays
+    for(i in c("parameters", "cov.unscaled", "correlation", "coefficients"))
+        if(length(val[[i]]))
+            val[[i]] <- to.3d.array(val[[i]], template[[i]])
+    ## re-arrange the vectors into 2d arrays
+    for(i in c("df", "fstatistic"))
+        val[[i]] <- to.2d.array(val[[i]], template[[i]])
+    ## re-arrange the scalars into vectors
+    for(i in c("sigma", "r.squared")) {
+        ##    val[[i]] <- unlist(val[[i]]) - this deletes NULL components
+        val[[i]] <- c(to.2d.array(val[[i]], template[[i]]))
+    }
+    ## select those attributes that do not vary with groups
+    for(i in c("terms", "formula"))
+        val[[i]] <- template[[i]]
+    val[["call"]] <- attr(object, "call")
+    if(inherits(object, "nlsList"))
+        names(val[["call"]]["model"]) <- "object"
+    val[["pool"]] <- pool
+    if(pool) {
+        poolSD <- pooledSD(object)
+        dfRes <- attr(poolSD, "df")
+        RSE <- c(poolSD)
+        corRSE <- RSE/val$sigma
+        pname <- if(inherits(object, "nlsList")) "parameters" else "coefficients"
+        val[[pname]][,2,] <- val[[pname]][,2,] * corRSE
+        val[[pname]][,3,] <- val[[pname]][,3,] / corRSE
+        if(!inherits(object, "nlsList"))
+            val[[pname]][,4,] <- 2*pt(abs(val[[pname]][,3,]), dfRes, lower.tail=FALSE)
+        val[["df.residual"]] <- dfRes
+        val[["RSE"]] <- RSE
+    }
+    attr(val, "groupsForm") <- attr(object, "groupsForm")
+    class(val) <- "summary.lmList"
+    val
+}
+
 
 ### All the other "lmList4" S3 methods are imported from  nmle :
 ##
@@ -453,10 +550,9 @@ for(fn in c("gsummary", "c_deparse")) {
 
 for(fn in c("fitted", "fixef", "logLik", "pairs", "plot", "predict",
             ## "print", <- have our own show()
-           "qqnorm", "ranef", "residuals", "summary")) {
+           "qqnorm", "ranef", "residuals")) {
     meth <- get(paste(fn, "lmList",  sep="."), envir = .ns.nlme, inherits=FALSE)
     environment(meth) <- .ns.lme4 # e.g. in order to use *our* pooledSD()
     assign(paste(fn, "lmList4", sep="."), meth)
 }
 rm(fn)
-
