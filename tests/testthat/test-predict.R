@@ -76,7 +76,7 @@ test_that("predict fixed-effect term contributions", {
     expect_equal(colnames(p_terms), attr(terms(gm1, fixed.only=TRUE), "term.labels"))
 
     p_period <- predict(gm1, type="terms", terms="period")
-    expect_equal(drop(p_period + attr(p_terms, "constant")), p_link0)
+    expect_equal(drop(p_period + attr(p_period, "constant")), p_link0)
     expect_equal(colnames(p_period), "period")
 })
 

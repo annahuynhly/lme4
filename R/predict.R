@@ -593,6 +593,9 @@ predict.merMod <- function(object, newdata=NULL, newparams=NULL,
             }
         }
         constant <- pred - rowSums(pterms)
+        if (length(constant) > 1L && all(constant == constant[1])) {
+            constant <- constant[1]
+        }
         if (!is.null(terms)) {
             if (inherits(terms, "terms")) {
                 terms <- attr(terms, "term.labels")
