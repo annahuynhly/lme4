@@ -441,15 +441,17 @@ summary.lmList4 <-
           ## TODO? just   identical(dnames[[1]], dnames[[2]]) :
           if (length(dnames[[1]]) == length(dnames[[2]]) &&
               all(dnames[[1]] == dnames[[2]])) { ## symmetric
-            val <- array(NA_real_, dim=c(length(cfNms), length(cfNms), length(lst)),
-                         dimnames=list(cfNms, cfNms, names(lst)))
+            val <- array(NA_real_,
+                         dim = c(length(cfNms), length(cfNms), length(lst)),
+                         dimnames = list(cfNms, cfNms, names(lst)))
             for (ii in use.i) {
               use <- dimnames(lst[[ii]])[[1]]
               val[use, use, ii] <- lst[[ii]]
             }
           } else {
-            val <- array(NA_real_, dim=c(length(cfNms), dim(template)[2], length(lst)),
-                         dimnames=list(cfNms, dnames[[2]], names(lst)))
+            val <- array(NA_real_,
+                         dim = c(length(cfNms), dim(template)[2], length(lst)),
+                         dimnames = list(cfNms, dnames[[2]], names(lst)))
             for (ii in use.i) {
               use <- dimnames(lst[[ii]])[[1]]
               val[use, , ii] <- lst[[ii]]
@@ -463,10 +465,10 @@ summary.lmList4 <-
         {
             if(is.null(template)) return(lst)
             template <- as.vector(template)
-            val <- t(array(unlist(lapply(lst, function(el) if(is.null(el))
-                                                             template else el)),
-                           c(length(template), length(lst)),
-                           list(names(template), names(lst))))
+            val <- t(array(unlist(lapply(lst, function(el)
+                if (is.null(el)) template else el)),
+                c(length(template), length(lst)),
+                list(names(template), names(lst))))
             val[vapply(lst, is.null, NA), ] <- NA
             val
         }
