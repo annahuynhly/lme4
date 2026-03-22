@@ -593,13 +593,17 @@ predict.merMod <- function(object, newdata=NULL, newparams=NULL,
             }
         }
         constant <- pred - rowSums(pterms)
-        if (length(constant) > 1L && all(constant == constant[1])) {
+        if (length(constant) > 1L && diff(range(constant)) == 0) {
             constant <- constant[1]
         }
         if (!is.null(terms)) {
             if (inherits(terms, "terms")) {
                 terms <- attr(terms, "term.labels")
             } else if (is.numeric(terms)) {
+                if (any(!is.finite(terms)) || any(terms < 1L) ||
+                    any(terms > length(term.labels)) || any(terms != as.integer(terms))) {
+                    stop("numeric 'terms' argument must contain valid term indices")
+                }
                 terms <- term.labels[terms]
             }
             if (!all(terms %in% term.labels)) {

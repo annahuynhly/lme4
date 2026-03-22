@@ -77,6 +77,7 @@ test_that("predict fixed-effect term contributions", {
 
     p_period <- predict(gm1, type="terms", terms="period")
     expect_equal(drop(p_period + attr(p_period, "constant")), p_link0)
+    expect_equal(ncol(p_period), 1)
     expect_equal(colnames(p_period), "period")
 })
 
@@ -92,6 +93,10 @@ test_that("predict terms type validation", {
     expect_error(
         predict(gm1, type="terms", terms="badterm"),
         "unknown terms in 'terms' argument"
+    )
+    expect_error(
+        predict(gm1, type="terms", terms=999),
+        "numeric 'terms' argument must contain valid term indices"
     )
 })
 
