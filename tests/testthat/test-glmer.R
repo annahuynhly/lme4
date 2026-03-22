@@ -78,8 +78,14 @@ test_that("glmer", {
                          control=glmerControl(check.nlev.gtreq.5="warning")),
                    "< 5 sampled levels")
     ## glmer(family=gaussian) should return glmerMod (no longer redirects to lmer)
+    ## theta values are on a different scale than lmer; compare theta/sigma
     fm1. <- glmer(Reaction ~ Days + (Days|Subject), sleepstudy)
+    fm1a <- lmer(Reaction ~ Days + (Days|Subject), sleepstudy, REML = FALSE)
     expect_is(fm1., "glmerMod")
+    expect_false(isSingular(fm1.))
+    expect_equal(unname(getME(fm1., "theta") / sigma(fm1.)),
+                 unname(getME(fm1a, "theta")),
+                 tolerance = 1e-2)
     options(warn=2)
     options(glmerControl=list(junk=1,check.conv.grad="ignore"))
     expect_warning(glmer(z~ 1|f, d, family=binomial),
@@ -422,4 +428,3 @@ test_that("turn off conv checking for npara > check.conv.nparmax", {
   ## Second shouldn't be evaluated
   expect_null(mod2@optinfo$conv$lme4)
 })
-
