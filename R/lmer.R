@@ -645,15 +645,16 @@ anova.merMod <- anovaLmer
 ##' @S3method as.function merMod
 as.function.merMod <- function(x, ...) {
     reCovs <- getReCovs(x)
+    is_glmm <- isGLMM(x)
     pp <- x@pp$copy()
-    nAGQ <- getME(x, "devcomp")$dims[["nAGQ"]]
+    nAGQ <- if (is_glmm) x@devcomp$dims[["nAGQ"]] else 0L
     lower <- getLower(x)
     upper <- getUpper(x)
     devlist <- c(list(resp    = x@resp$copy(),
                       pp      = pp,
                       mkPar   = mkMkPar(reCovs),
                       mkTheta = mkMkTheta(reCovs)),
-                 if (isGLMM(x)) {
+                 if (is_glmm) {
                      dc <- x@devcomp
                      list(tolPwrss    = dc$cmp[["tolPwrss"]],
                           compDev     = dc$dims[["compDev"]],
@@ -666,7 +667,7 @@ as.function.merMod <- function(x, ...) {
                           verbose     = 0L,
                           dpars       = seq_len(getParLength(x)))
                  })
-    if (isGLMM(x) && nAGQ > 0L) {
+    if (is_glmm && nAGQ > 0L) {
         lower <- c(lower, rep(-Inf, length(pp$beta0)))
         upper <- c(upper, rep( Inf, length(pp$beta0)))
     }
