@@ -657,12 +657,13 @@ as.function.merMod <- function(x, ...) {
                  if (is_glmm) {
                      dc <- x@devcomp
                      list(tolPwrss    = dc$cmp[["tolPwrss"]],
-                          compDev     = dc$dims[["compDev"]],
-                          nAGQ        = nAGQ,
-                          lp0         = pp$linPred(1),
-                          baseOffset  = forceCopy(x@resp$offset),
-                          pwrssUpdate = glmerPwrssUpdate,
-                          GQmat       = GHrule(nAGQ),
+                           compDev     = dc$dims[["compDev"]],
+                           nAGQ        = nAGQ,
+                           maxit       = 100L,
+                           lp0         = pp$linPred(1),
+                           baseOffset  = forceCopy(x@resp$offset),
+                           pwrssUpdate = glmerPwrssUpdate,
+                           GQmat       = GHrule(nAGQ),
                           fac         = x@flist[[1]],
                           verbose     = 0L,
                           dpars       = seq_len(getParLength(x)))

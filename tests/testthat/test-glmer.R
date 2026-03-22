@@ -426,9 +426,10 @@ test_that("as.function works for GLMMs (GitHub issue)", {
     ## as.function(glmerMod) should produce a deviance function like update(., devFunOnly=TRUE)
     gm1 <- glmer(cbind(incidence, size - incidence) ~ period + (1 | herd),
                  family = binomial, data = cbpp)
-    ## as.function should not error
+    ## as.function should not error, including when called with scalar theta
     f1 <- as.function(gm1)
     expect_is(f1, "function")
+    expect_true(is.numeric(f1(1)) && length(f1(1)) == 1L)
     ## the deviance function should return a scalar numeric value
     par1 <- getME(gm1, "theta")
     val1 <- f1(par1)
