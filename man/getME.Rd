@@ -74,8 +74,11 @@ getME(object, name, ...)
       \item{\code{"beta"}:}{fixed-effects parameter estimates (identical
 	to the result of \code{\link{fixef}}, but without names)}
       \item{\code{"theta"}:}{lower triangular entries of Cholesky
-	factors of relative random effect covariance matrices, stored in
-	column-major order.}
+	factors of random effect covariance matrices, stored in
+	column-major order. For LMMs these are relative to the residual
+	scale (\code{sigma}); for GLMMs with an estimated scale parameter
+	(e.g. \code{family=gaussian()}), \code{theta/sigma(object)} gives
+	the corresponding relative Cholesky parameters.}
       \item{\code{"par"}:}{relative random effect covariance parameter
 	estimates.}
       \item{\code{"ST"}:}{A list of S and T factors in the TSST' Cholesky
@@ -205,4 +208,3 @@ stopifnot(identical(Z,  parts $ Z),
           identical(b1, parts $ beta))
 }
 \keyword{utilities}
-

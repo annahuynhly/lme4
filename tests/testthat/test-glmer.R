@@ -83,6 +83,7 @@ test_that("glmer", {
     fm1a <- lmer(Reaction ~ Days + (Days|Subject), sleepstudy, REML = FALSE)
     expect_is(fm1., "glmerMod")
     expect_false(isSingular(fm1.))
+    ## allow small optimization/path differences between glmer and lmer fits
     expect_equal(unname(getME(fm1., "theta") / sigma(fm1.)),
                  unname(getME(fm1a, "theta")),
                  tolerance = 1e-2)
