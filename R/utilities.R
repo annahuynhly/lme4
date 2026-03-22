@@ -506,9 +506,9 @@ mkMerMod <- function(rho, opt, reTrms, fr, mc, lme4conv=NULL) {
     ## weights <- resp$weights
     beta    <- pp$beta(fac)
     ## For GLMMs with a scale parameter (e.g. Gaussian/Gamma/inverse.gaussian),
-    ## the dispersion estimate should be based on the response deviance (drsum),
-    ## not on pwrss (which includes the random-effects penalty term).
-    sigmaML <- if (isGLMM) resp$resDev()/n else pwrss/n
+    ## estimate dispersion from Pearson residual sum of squares (wrss), not pwrss:
+    ## pwrss includes the random-effects penalty term and biases sigma downward.
+    sigmaML <- if (isGLMM) wrss/n else pwrss/n
     devval <- if (rcl=="lmerResp" && resp$REML != 0L || trivial.y) {
         NA
     } else {

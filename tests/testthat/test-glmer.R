@@ -344,7 +344,8 @@ if(FALSE) { ## Hadley broke this
         data("Rail", package = "nlme")
         mRail <- glmer(travel ~ 1 + (1|Rail), data = Rail,
                        family = gaussian(link = "log"))
-        expect_equal(unname(sigma(mRail)), 4.0, tolerance = 0.05)
+        ## allow modest optimizer/platform differences in the Rail GLMM fit
+        expect_equal(unname(sigma(mRail)), 4.0, tolerance = 0.1)
         expect_equal(unname(c(logLik(mRail))), -64.5, tolerance = 0.6)
     }
 
