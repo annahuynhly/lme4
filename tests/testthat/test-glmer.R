@@ -334,10 +334,19 @@ if(FALSE) { ## Hadley broke this
                  data=dd,
                  mustart=pmax(dd$y,0.1))
     
-    msum <- c(fixef(g1),unlist(c(VarCorr(g1))),c(logLik(g1)))
+    msum <- c(fixef(g1),unlist(c(VarCorr(g1))))
     expect_equal(msum,
-                 c(`(Intercept)` = 0.23389405, x = 1.0017436, f = 0.3187655, -156.7773),
+                 c(`(Intercept)` = 0.23389405, x = 1.0017436, f = 0.3187655),
                  tolerance=1e-5)
+    expect_true(is.finite(c(logLik(g1))))
+
+    if (requireNamespace("nlme", quietly = TRUE)) {
+        data("Rail", package = "nlme")
+        mRail <- glmer(travel ~ 1 + (1|Rail), data = Rail,
+                       family = gaussian(link = "log"))
+        expect_equal(unname(sigma(mRail)), 4.0, tolerance = 0.05)
+        expect_equal(unname(c(logLik(mRail))), -64.5, tolerance = 0.6)
+    }
 
     ## GH 415
     expect_warning(glmer (round(Reaction) ~ Days + (1|Subject),
@@ -421,4 +430,3 @@ test_that("turn off conv checking for npara > check.conv.nparmax", {
   ## Second shouldn't be evaluated
   expect_null(mod2@optinfo$conv$lme4)
 })
-

@@ -505,7 +505,16 @@ mkMerMod <- function(rho, opt, reTrms, fr, mc, lme4conv=NULL) {
     }
     ## weights <- resp$weights
     beta    <- pp$beta(fac)
-    sigmaML <- pwrss/n
+    sigmaML <- if (isGLMM) resp$resDev()/n else pwrss/n
+    devval <- if (rcl=="lmerResp" && resp$REML != 0L || trivial.y) {
+        NA
+    } else {
+        opt$fval
+    }
+    if (!trivial.y && isGLMM && identical(resp$family$family, "gaussian")) {
+        ldW <- sum(log(resp$weights))
+        devval <- - ldW + pp$ldL2() + n*(1 + log(2*pi*pwrss) - log(n))
+    }
     if (rcl != "lmerResp") {
         pars <- opt$par
         if (length(pars) > length(pp$theta)) beta <- pars[-(seq_along(pp$theta))]
@@ -516,7 +525,7 @@ mkMerMod <- function(rho, opt, reTrms, fr, mc, lme4conv=NULL) {
              REML=if (rcl=="lmerResp" && resp$REML != 0L && !trivial.y)
                   opt$fval else NA,
              ## FIXME: construct 'REML deviance' here?
-             dev=if (rcl=="lmerResp" && resp$REML != 0L || trivial.y) NA else opt$fval,
+             dev=devval,
              sigmaML=sqrt(unname(if (!dims[["useSc"]] || trivial.y) NA else sigmaML)),
              sigmaREML=sqrt(unname(if (rcl!="lmerResp" || trivial.y) NA else
                                    sigmaML*(dims[["n"]]/dims[["nmp"]]))),
