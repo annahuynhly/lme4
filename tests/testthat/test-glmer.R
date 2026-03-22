@@ -338,7 +338,7 @@ if(FALSE) { ## Hadley broke this
     expect_equal(msum,
                  c(`(Intercept)` = 0.23389405, x = 1.0017436, f = 0.3187655),
                  tolerance=1e-5)
-    expect_true(is.finite(c(logLik(g1))))
+    expect_equal(unname(c(logLik(g1))), -156.7773, tolerance = 1e-4)
 
     if (requireNamespace("nlme", quietly = TRUE)) {
         data("Rail", package = "nlme")
