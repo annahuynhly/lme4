@@ -166,7 +166,7 @@ allFit <- function(object, meth.tab = NULL,
                                      opt.ctrls[[optimizer[..i]]])
             ctrl <- do.call(if(isGLMM(object)) glmerControl else lmerControl, ctrl)
             fit_once <- function() {
-                if (isNLMM(object)) {
+                if (start_from_mle && isNLMM(object)) {
                     warning("results are not guaranteed when using nlmer")
                 }
                 refit(object, control = ctrl)
