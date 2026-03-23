@@ -165,38 +165,11 @@ allFit <- function(object, meth.tab = NULL,
             ctrl$optCtrl <- sanitize(ctrl$optCtrl,
                                      opt.ctrls[[optimizer[..i]]])
             ctrl <- do.call(if(isGLMM(object)) glmerControl else lmerControl, ctrl)
-            update_fit <- function(start = NULL) {
-                form <- formula(object)
-                env <- environment(form)
-                tmp_env <- new.env(parent = env)
-                environment(form) <- tmp_env
-                assign("ctrl", ctrl, envir = tmp_env, inherits = FALSE)
-                if (!is.null(start)) {
-                    assign("pars", start, envir = tmp_env, inherits = FALSE)
-                }
-                on.exit({ environment(form) <- env }, add = TRUE)
-                if (is.null(start)) {
-                    update(object, control = ctrl)
-                } else {
-                    update(object, start = start, control = ctrl)
-                }
-            }
             fit_once <- function() {
-                if (start_from_mle && !isNLMM(object)) {
-                    return(refit(object, control = ctrl))
+                if (isNLMM(object)) {
+                    warning("results are not guaranteed when using nlmer")
                 }
-                if (start_from_mle) {
-                    pars <- if (isGLMM(object)) {
-                        getME(object, c("theta", "fixef"))
-                    } else {
-                        getME(object, "theta")
-                    }
-                    if (isNLMM(object)) {
-                        warning("results are not guaranteed when using nlmer")
-                    }
-                    return(update_fit(start = pars))
-                }
-                update_fit()
+                refit(object, control = ctrl)
             }
             tt <- system.time(
               rr <- if (catch.errs) tryCatch(fit_once(), error = function(e) e) else fit_once()

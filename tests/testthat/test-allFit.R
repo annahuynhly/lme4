@@ -111,15 +111,14 @@ if (testLevel>1) {
         expect_true(all(summary(ff)$which.OK))
     })
     
-    test_that("allFit(start_from_mle=TRUE) does not depend on update() data lookup", {
+    test_that("allFit does not depend on update() data lookup", {
         gm1 <- glmer(
             cbind(incidence, size - incidence) ~ period + (1 | herd),
             data = cbpp, family = binomial
         )
         gm1@call$data <- quote(.allFit_missing_data_symbol.)
         cc <- capture.output(ff <- allFit(gm1, verbose = FALSE,
-                                          catch.errs = FALSE,
-                                          start_from_mle = TRUE))
+                                          catch.errs = FALSE))
         expect_true(all(summary(ff)$which.OK))
     })
 
