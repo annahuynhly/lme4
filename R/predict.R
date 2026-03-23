@@ -959,8 +959,9 @@ simulate.merMod <- function(object, nsim = 1, seed = NULL, use.u = FALSE,
 ##
 gaussian_simfun <- function(object, nsim, ftd=fitted(object),
                             wts=weights(object)) {
-    sd <- sigma(object)/sqrt(wts)
-    sd[!is.na(wts) & wts <= 0] <- 0
+    sd <- numeric(length(wts))
+    nzws <- !is.na(wts) & wts > 0
+    sd[nzws] <- sigma(object)/sqrt(wts[nzws])
     rnorm(nsim*length(ftd), ftd, sd=sd)
 }
 
