@@ -121,7 +121,6 @@ simulate.formula <- function(object, nsim=1, seed=NULL, ..., basis, newdata, dat
 
 #' @describeIn simulate.formula A function to catch the situation when there is no method implemented for the class to which the LHS evaluates.
 #' 
-#' @export
 simulate.formula_lhs <- function(object, nsim=1, seed=NULL, ...){
   stop("No applicable method for LHS of type ", paste0(sQuote(class(attr(object, ".Basis"))), collapse=", "), ".")
 }
