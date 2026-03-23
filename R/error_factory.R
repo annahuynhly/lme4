@@ -1,3 +1,5 @@
+## Internal utility: wrap a function call and capture message/warning/error
+## conditions as attributes on the returned value.
 factory <- function (fun, debug=FALSE,
                      errval="An error occurred in the factory function",
                      types=c("message","warning","error")) {
