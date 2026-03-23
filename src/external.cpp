@@ -343,6 +343,26 @@ extern "C" {
                 if (verb) Rcpp::Rcout << 
                               "\npwrssUpdate: Entering step halving loop" 
                                       << std::endl;
+                // If delu (or delb) contain NaN or Inf, step-halving by averaging
+                // will never converge because (olddelu + NaN)/2 = NaN. This can
+                // happen when the working weights at the start of this iteration
+                // are NaN or Inf (e.g., mu > 1 for binomial with a log link, which
+                // gives a negative variance and hence NaN sqrtWrkWt). Recover by
+                // resetting to the previous valid parameter values before halving.
+                // If olddelu is also non-finite (e.g., initial NaN state), fall
+                // back to zero so that step-halving can still proceed.
+                if (!pp->delu().allFinite()) {
+                    if (!olddelu.allFinite())
+                        olddelu = Vec::Zero(pp->delu().size());
+                    pp->setDelu(olddelu);
+                    if (!uOnly) {
+                        if (!olddelb.allFinite())
+                            olddelb = Vec::Zero(pp->delb().size());
+                        pp->setDelb(olddelb);
+                    }
+                    rp->updateMu(pp->linPred(1.));
+                    pdev = rp->resDev() + pp->sqrL(1.);
+                }
                 for (int k = 0; k < maxstephalfit && 
                          (ISNAN(pdev) || (pdev > oldpdev)); k++) {
                     pp->setDelu((olddelu + pp->delu())/2.);
