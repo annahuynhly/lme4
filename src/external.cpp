@@ -351,7 +351,8 @@ extern "C" {
                 // resetting to the previous valid parameter values before halving.
                 // If olddelu is also non-finite (e.g., initial NaN state), fall
                 // back to zero so that step-halving can still proceed.
-                if (!pp->delu().allFinite()) {
+                // In uOnly mode we do not update fixed effects, so delb is ignored.
+                if (!pp->delu().allFinite() || (!uOnly && !pp->delb().allFinite())) {
                     if (!olddelu.allFinite())
                         olddelu = Vec::Zero(pp->delu().size());
                     pp->setDelu(olddelu);

@@ -47,3 +47,34 @@ test_that('PIRLS step-halving NaN recovery for binomial(link="log")', {
   )
   expect_is(m, "glmerMod")
 })
+
+test_that('PIRLS step-halving handles reported random-data example', {
+  set.seed(101)
+  df.odd <- data.frame(
+    Subject = rep(seq(1, 24, 2), each = 4),
+    Condition = rep(c("A", "B", "A", "B"), times = 12),
+    Block = rep(c(1, 2, 3, 4), times = 12),
+    Yes = sample(1:10, 48, replace = TRUE)
+  )
+  df.odd$No <- 10 - df.odd$Yes
+
+  df.even <- data.frame(
+    Subject = rep(seq(2, 24, 2), each = 4),
+    Condition = rep(c("A", "B", "A", "B"), times = 12),
+    Block = rep(c(1, 2, 3, 4), times = 12),
+    Yes = sample(1:10, 48, replace = TRUE)
+  )
+  df.even$No <- 10 - df.even$Yes
+
+  df <- rbind(df.odd, df.even)
+  df$Counterbalance <- df$Subject %% 2
+
+  expect_is(
+    suppressWarnings(
+      glmer(cbind(Yes, No) ~ Condition + Block + Counterbalance + (1 | Subject),
+            family = binomial(link = "log"),
+            data = df)
+    ),
+    "glmerMod"
+  )
+})
