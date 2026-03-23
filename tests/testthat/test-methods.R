@@ -769,6 +769,22 @@ if (testLevel>1) {
       ))
     expect_all_true(abs(ci_bb["cor_Days.(Intercept)|Subject",]) <= 1)
   })
+  
+  test_that("bootstrap confint respects weights in gaussian models", {
+    set.seed(101)
+    d <- sleepstudy
+    d$w <- 1
+    d$w[d$Subject %in% levels(d$Subject)[1:3]] <- 0
+    fmw <- lmer(Reaction ~ Days + (Days | Subject), data = d, weights = w)
+    expect_equal(sigma(fmw), sqrt(deviance(fmw) / nobs(fmw)))
+    ci_w <- suppressWarnings(
+      suppressMessages(
+        confint(fmw, method = "boot", nsim = 10, signames = FALSE, quiet = TRUE)
+      )
+    )
+    expect_lt(ci_w["sigma", 1], sigma(fmw))
+    expect_gt(ci_w["sigma", 2], sigma(fmw))
+  })
     
   test_that("densityplot is robust", {
     p <- readRDS(system.file("testdata","harmel_profile.rds",

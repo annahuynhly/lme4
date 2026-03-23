@@ -959,9 +959,9 @@ simulate.merMod <- function(object, nsim = 1, seed = NULL, use.u = FALSE,
 ##
 gaussian_simfun <- function(object, nsim, ftd=fitted(object),
                             wts=weights(object)) {
-
-    if (any(wts != 1)) warning("ignoring prior weights")
-    rnorm(nsim*length(ftd), ftd, sd=sigma(object))
+    sd <- sigma(object)/sqrt(wts)
+    sd[!is.na(wts) & wts <= 0] <- 0
+    rnorm(nsim*length(ftd), ftd, sd=sd)
 }
 
 binomial_simfun <- function(object, nsim, ftd=fitted(object),
