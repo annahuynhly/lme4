@@ -199,6 +199,26 @@ namespace glm {
         }
     };
 
+    template<typename T>
+    struct inverseInv : public std::function<T(T)> {
+        const T operator() (const T& x) const {
+            const double eta = double(x);
+            const double eps = double(std::numeric_limits<T>::epsilon());
+            const double safe_eta = (eta > eps) ? eta : eps;
+            return T(1.0 / safe_eta);
+        }
+    };
+
+    template<typename T>
+    struct inverseMuEta : public std::function<T(T)> {
+        const T operator() (const T& x) const {
+            const double eta = double(x);
+            const double eps = double(std::numeric_limits<T>::epsilon());
+            const double safe_eta = (eta > eps) ? eta : eps;
+            return T(-1.0 / (safe_eta * safe_eta));
+        }
+    };
+
 
     //@{
     double                binomialDist::aic     (const ArrayXd& y, const ArrayXd& n, const ArrayXd& mu,
@@ -363,9 +383,9 @@ namespace glm {
     //@{
     const ArrayXd  inverseLink::linkFun(const ArrayXd&  mu) const {return mu.inverse();}
   //const ArrayXd  inverseLink::linkInv(const ArrayXd& eta) const {return eta.unaryExpr(inverse<double>());}
-    const ArrayXd  inverseLink::linkInv(const ArrayXd& eta) const {return eta.inverse();}
+    const ArrayXd  inverseLink::linkInv(const ArrayXd& eta) const {return eta.unaryExpr(inverseInv<double>());}
   // const ArrayXd  inverseLink::muEta(  const ArrayXd& eta) const {return -(eta.unaryExpr(inverse<double>()).square());}
-    const ArrayXd  inverseLink::muEta(  const ArrayXd& eta) const {return -(eta.inverse().square());}
+    const ArrayXd  inverseLink::muEta(  const ArrayXd& eta) const {return eta.unaryExpr(inverseMuEta<double>());}
     //@}
 
     //@{

@@ -199,6 +199,16 @@ test_that("glmer works for Gamma inverse link with small shape parameter", {
   }
 })
 
+test_that("Gamma inverse link clamps invalid eta to avoid non-finite mu", {
+  fam <- Gamma(link = "inverse")
+  eta <- c(-1, -0.1, 0, 1e-12, 0.5, 1)
+  mu <- fam$linkinv(eta)
+  mu_eta <- fam$mu.eta(eta)
+  expect_true(all(is.finite(mu)))
+  expect_true(all(mu > 0))
+  expect_true(all(is.finite(mu_eta)))
+})
+
 simfun_invgauss <- function(ngrp = 50, nrep = 500, lambda = 1, 
                             use_simulate = FALSE, seed = NULL) {
   if (!is.null(seed)) set.seed(seed)
