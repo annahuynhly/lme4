@@ -203,8 +203,8 @@ namespace glm {
     struct inverseInv : public std::function<T(T)> {
         const T operator() (const T& x) const {
             const double eta = double(x);
-            const double eps = double(std::numeric_limits<T>::epsilon());
-            const double safe_eta = (eta > eps) ? eta : eps;
+            const double eta_floor = std::pow(double(std::numeric_limits<T>::epsilon()), 0.25);
+            const double safe_eta = (eta > eta_floor) ? eta : eta_floor;
             return T(1.0 / safe_eta);
         }
     };
@@ -213,8 +213,8 @@ namespace glm {
     struct inverseMuEta : public std::function<T(T)> {
         const T operator() (const T& x) const {
             const double eta = double(x);
-            const double eps = double(std::numeric_limits<T>::epsilon());
-            const double safe_eta = (eta > eps) ? eta : eps;
+            const double eta_floor = std::pow(double(std::numeric_limits<T>::epsilon()), 0.25);
+            const double safe_eta = (eta > eta_floor) ? eta : eta_floor;
             return T(-1.0 / (safe_eta * safe_eta));
         }
     };
