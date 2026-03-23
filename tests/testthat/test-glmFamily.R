@@ -179,6 +179,26 @@ test_that("glmer works for Gamma with small shape parameter", {
   }
 })
 
+test_that("glmer works for Gamma inverse link with small shape parameter", {
+  ## shape=0.1 previously caused PIRLS NaN with inverse link
+  shape_vec <- c(0.1,0.5,1,2,5)
+  set.seed(456)
+  for(shape in shape_vec){
+    d <- expand.grid(block = LETTERS[1:26], rep = 1:100, KEEP.OUT.ATTRS = FALSE)
+    d$x <- runif(nrow(d))
+    reff_f <- rnorm(length(levels(d$block)), sd = 1)
+    d$eta <- 4 + 3 * d$x + reff_f[d$block]
+    d$mu <- 1/d$eta
+    d$y <- rgamma(nrow(d), scale = d$mu / shape, shape = shape)
+
+    fit <- suppressWarnings(
+      glmer(y ~ x + (1|block), data = d, family = Gamma(link = "inverse"))
+    )
+    expect_s4_class(fit, "merMod")
+    expect_equal(1/sigma(fit)^2, shape, tolerance = shape * 0.2)
+  }
+})
+
 simfun_invgauss <- function(ngrp = 50, nrep = 500, lambda = 1, 
                             use_simulate = FALSE, seed = NULL) {
   if (!is.null(seed)) set.seed(seed)

@@ -247,7 +247,8 @@ mkRespMod <- function(fr, REML=NULL, family = NULL, nlenv = NULL, nlmod = NULL, 
         ## Using mustart = y causes PIRLS divergence for small shape parameters (e.g. shape < 0.2)
         ## because E[log(y)] <= log(E[y]) (Jensen's inequality): the OLS fit of log(y) ~ X gives
         ## coefficients implying exp(fitted) <= y (optimizes on wrong target)
-        else if (family$family == "Gamma" && is.null(etastart_update) && length(y) > 0) {
+        else if (family$family == "Gamma" && family$link == "log" &&
+                 is.null(etastart_update) && length(y) > 0) {
             rho$mustart[] <- mean(rho$mustart)
         }
         ## family$initialize <- NULL     # remove clutter from str output
