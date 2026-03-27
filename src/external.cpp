@@ -314,10 +314,17 @@ extern "C" {
         int debug=0;
         const bool isGaussian = (rp->family() == "gaussian");
         const double nobs = rp->y().size();
+        const double sigmaLower = std::numeric_limits<double>::epsilon();
+        auto updateSigmaFromPdev = [&]() {
+            if (isGaussian) {
+                // pdev here is the current PIRLS criterion = resDev + ||u||^2,
+                // i.e. the penalized RSS target used in this loop.
+                rp->setSigma(std::sqrt(std::max(pdev/nobs, sigmaLower)));
+            }
+        };
 
         pdev = oldpdev; // define so debugging statements work on first step
         for (int i = 0; i < maxit; i++) {
-            if (isGaussian) rp->setSigma(std::sqrt(pwrss(rp, pp, 0.)/nobs));
             if (verb) {
                 Rcpp::Rcout << "*** pwrssUpdate step " << i << std::endl;
                 if (debug) {
@@ -331,6 +338,7 @@ extern "C" {
             }
             Vec   olddelu(pp->delu()), olddelb(pp->delb());
             pdev = internal_glmerWrkIter(pp, rp, uOnly);
+            updateSigmaFromPdev();
             if (verb) {
                 Rcpp::Rcout << "pdev=" << pdev << 
                     "; delu_min: " << pp->delu().minCoeff() <<
@@ -351,8 +359,8 @@ extern "C" {
                     pp->setDelu((olddelu + pp->delu())/2.);
                     if (!uOnly) pp->setDelb((olddelb + pp->delb())/2.);
                     rp->updateMu(pp->linPred(1.));
-                    if (isGaussian) rp->setSigma(std::sqrt(pwrss(rp, pp, 0.)/nobs));
                     pdev = rp->resDev() + pp->sqrL(1.);
+                    updateSigmaFromPdev();
                     if (moreverb) {
                         Rcpp::Rcout << "step-halving iteration " <<
                             k << ":  pdev=" << pdev << 
