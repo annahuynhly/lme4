@@ -207,7 +207,7 @@ test_that("Gamma inverse link clamps invalid eta to avoid non-finite mu", {
   expect_true(all(is.finite(mu)))
   expect_true(all(mu > 0))
   expect_true(all(is.finite(mu_eta)))
-  expect_true(max(mu) < 1e6)
+  expect_true(max(mu) <= 1e3)
   expect_true(max(abs(mu_eta)) < 1e12)
 })
 
