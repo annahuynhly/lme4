@@ -78,3 +78,24 @@ test_that('PIRLS step-halving handles reported random-data example', {
     "glmerMod"
   )
 })
+
+test_that('PIRLS step-halving recovers from downdated VtV path', {
+  set.seed(102)
+  df <- data.frame(
+    Subject = rep(1:24, each = 4),
+    Condition = rep(c("A", "B", "A", "B"), times = 24),
+    Block = rep(c(1, 2, 3, 4), times = 24),
+    Yes = c(rep(10, 60), sample(8:10, 36, replace = TRUE))
+  )
+  df$No <- 10 - df$Yes
+  df$Counterbalance <- df$Subject %% 2
+
+  expect_is(
+    suppressWarnings(
+      glmer(cbind(Yes, No) ~ Condition + Block + Counterbalance + (1 | Subject),
+            family = binomial(link = "log"),
+            data = df)
+    ),
+    "glmerMod"
+  )
+})

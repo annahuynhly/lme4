@@ -5,6 +5,7 @@
 // This file is part of lme4.
 
 #include <iomanip>
+#include <cstring>
 #include "predModule.h"
 #include "respModule.h"
 #include "optimizer.h"
@@ -327,7 +328,15 @@ extern "C" {
                 }
             }
             Vec   olddelu(pp->delu()), olddelb(pp->delb());
-            pdev = internal_glmerWrkIter(pp, rp, uOnly);
+            bool downdated_vtv = false;
+            try {
+                pdev = internal_glmerWrkIter(pp, rp, uOnly);
+            } catch (const std::exception& e) {
+                if (std::strstr(e.what(), "Downdated VtV is not positive definite") == NULL)
+                    throw;
+                downdated_vtv = true;
+                pdev = std::numeric_limits<double>::quiet_NaN();
+            }
             if (verb) {
                 Rcpp::Rcout << "pdev=" << pdev << 
                     "; delu_min: " << pp->delu().minCoeff() <<
@@ -338,7 +347,7 @@ extern "C" {
             }
             if (std::abs((oldpdev - pdev) / pdev) < tol) {cvgd = true; break;}
 
-            if (ISNAN(pdev) || (pdev > oldpdev)) { 
+            if (downdated_vtv || ISNAN(pdev) || (pdev > oldpdev)) { 
                 // PWRSS step led to _larger_ deviation, or nan; try step halving
                 if (verb) Rcpp::Rcout << 
                               "\npwrssUpdate: Entering step halving loop" 
