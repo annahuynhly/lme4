@@ -311,11 +311,13 @@ extern "C" {
         double oldpdev=std::numeric_limits<double>::max();
         double pdev;
         int maxstephalfit = 20;
+        const int recovery_iter_multiplier = 5;
+        int maxit_extra = 0;
         bool   cvgd = false, verb = verbose > 2, moreverb = verbose > 10;
         int debug=0;
 
         pdev = oldpdev; // define so debugging statements work on first step
-        for (int i = 0; i < maxit; i++) {
+        for (int i = 0; i < maxit + maxit_extra; i++) {
             if (verb) {
                 Rcpp::Rcout << "*** pwrssUpdate step " << i << std::endl;
                 if (debug) {
@@ -335,6 +337,8 @@ extern "C" {
                 if (std::strstr(e.what(), "Downdated VtV is not positive definite") == NULL)
                     throw;
                 downdated_vtv = true;
+                if (maxit_extra < recovery_iter_multiplier * maxstephalfit)
+                    maxit_extra = recovery_iter_multiplier * maxstephalfit;
                 pdev = std::numeric_limits<double>::quiet_NaN();
             }
             if (verb) {
