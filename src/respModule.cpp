@@ -118,7 +118,8 @@ namespace lme4 {
         : lmResp(y, weights, offset, mu, sqrtXwt, sqrtrwt, wtres),
           d_fam(fam),
           d_eta(as<MVec>(eta)),
-          d_n(as<MVec>(n)) {
+          d_n(as<MVec>(n)),
+          d_sigma(1.0) {
     }
 
     double  glmResp::aic() const {
@@ -155,10 +156,18 @@ namespace lme4 {
                        muEta().minCoeff() <<
                        " min weights: " << d_weights.array().minCoeff() <<
                        std::endl;
-        return muEta() * (d_weights.array() / variance()).sqrt();
+        return muEta() * (d_weights.array() / variance()).sqrt() / d_sigma;
     }
 
     double glmResp::Laplace(double ldL2, double ldRX2, double sqrL) const {
+        if (family() == "gaussian") {
+            const double n = d_y.size();
+            const double pwrss = d_wrss + sqrL;
+            // Gaussian ML criterion:
+            //   -ldW + ldL2 + n * (1 + log(2*pi*pwrss) - log(n))
+            // where pwrss = wrss + ||u||^2.
+            return ldL2 - d_ldW + n * (1. + std::log(2. * M_PI * pwrss) - std::log(n));
+        }
         return ldL2 + sqrL + aic();
     }
 
@@ -178,7 +187,7 @@ namespace lme4 {
 
     double glmResp::updateWts() {
         d_sqrtrwt = (d_weights.array() / variance()).sqrt();
-        d_sqrtXwt = muEta() * d_sqrtrwt.array();
+        d_sqrtXwt = muEta() * d_sqrtrwt.array() / d_sigma;
         return updateWrss();
     }
 

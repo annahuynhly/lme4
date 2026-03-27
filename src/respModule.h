@@ -88,6 +88,7 @@ namespace lme4 {
     protected:
         glmFamily  d_fam;
         MVec       d_eta, d_n;
+        double     d_sigma;
     public:
         glmResp(Rcpp::List,SEXP,SEXP,SEXP,SEXP,SEXP,SEXP,SEXP,SEXP,SEXP);
 
@@ -108,12 +109,14 @@ namespace lme4 {
         double                aic() const;
         double            Laplace(double,double,double) const;
         double             resDev() const;
+        double              sigma() const {return d_sigma;}
         double              theta() const {return d_fam.theta();}
                                 //< negative binomial distribution only
         double           updateMu(const Eigen::VectorXd&);
         double          updateWts();
 
         void                 setN(const Eigen::VectorXd&);
+        void             setSigma(const double& sigma) {d_sigma = sigma;}
         void             setTheta(const double& ntheta) {d_fam.setTheta(ntheta);}
                                 // negative binomial distribution only
     };

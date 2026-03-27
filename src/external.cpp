@@ -312,9 +312,12 @@ extern "C" {
         int maxstephalfit = 20;
         bool   cvgd = false, verb = verbose > 2, moreverb = verbose > 10;
         int debug=0;
+        const bool isGaussian = (rp->family() == "gaussian");
+        const double nobs = rp->y().size();
 
         pdev = oldpdev; // define so debugging statements work on first step
         for (int i = 0; i < maxit; i++) {
+            if (isGaussian) rp->setSigma(std::sqrt(pwrss(rp, pp, 0.)/nobs));
             if (verb) {
                 Rcpp::Rcout << "*** pwrssUpdate step " << i << std::endl;
                 if (debug) {
@@ -348,6 +351,7 @@ extern "C" {
                     pp->setDelu((olddelu + pp->delu())/2.);
                     if (!uOnly) pp->setDelb((olddelb + pp->delb())/2.);
                     rp->updateMu(pp->linPred(1.));
+                    if (isGaussian) rp->setSigma(std::sqrt(pwrss(rp, pp, 0.)/nobs));
                     pdev = rp->resDev() + pp->sqrL(1.);
                     if (moreverb) {
                         Rcpp::Rcout << "step-halving iteration " <<
