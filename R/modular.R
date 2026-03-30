@@ -329,10 +329,6 @@ checkResponse <- function(y, ctrl) {
 ##' matrix building -- all of which is identical between the two public functions.
 ##'
 ##' @param formula   model formula (already processed via as.formula, env set)
-##' @param fr.form.  formula with specials replaced by (x | f)
-##'                  (named with trailing dot following existing lme4 convention)
-##' @param fr.form   formula with re terms replaced by sums (x + f)
-##'                  for model.frame() evaluation
 ##' @param mf        partially-constructed call to stats::model.frame
 ##'                  (formula slot will be filled in by this function)
 ##' @param contrasts optional contrasts argument
@@ -345,12 +341,26 @@ checkResponse <- function(y, ctrl) {
 ##' @param parent_env  parent.frame() captured by the calling function
 ##' @return list(fr, X, reTrms, formula, wmsgs) -- callers (lFormula/glFormula)
 ##'   append their own specific elements (REML or family) to this result
-mkFormula <- function(formula, fr.form., fr.form, mf, contrasts, control,
+mkFormula <- function(formula, mf, contrasts, control,
                       allow.n = FALSE,
                       check_zero_rows = FALSE,
                       check_na_Zt = FALSE,
                       set_varnames_fixed = FALSE,
                       parent_env = parent.frame()) {
+    ## substitute  special(x | f)  with  (x | f)
+    fr.form. <- noSpecials(formula, specials = lme4_specials, delete = FALSE)
+    ## substitute  (x | f)  and  (x || f)  with  (x + f)
+    fr.form <- sub_specials(fr.form., specials = c("|", "||"),
+                            keep_args = c(2L, 2L))
+    environment(fr.form.) <- environment(fr.form) <- environment(formula)
+    ## model.frame.default looks for these objects in the environment
+    ## of the *formula* (see 'extras', which is anything passed in '...'),
+    ## so they have to be put there:
+    for (i in c("weights", "offset")) {
+        if (i %in% names(mf))
+            assign(i, get(i, parent_env), environment(fr.form))
+    }
+
     mf$formula <- fr.form
     fr <- eval(mf, parent_env)
     if (check_zero_rows && nrow(fr) == 0L) stop("0 (non-NA) cases")
@@ -481,21 +491,7 @@ lFormula <- function(formula, data=NULL, REML = TRUE,
     mf$drop.unused.levels <- TRUE
     mf[[1L]] <- quote(stats::model.frame)
 
-    ## substitute  special(x | f)  with  (x | f)
-    fr.form. <- noSpecials(formula, specials = lme4_specials, delete = FALSE)
-    ## substitute  (x | f)  and  (x || f)  with  (x + f)
-    fr.form <- sub_specials(fr.form., specials = c("|", "||"),
-                            keep_args = c(2L, 2L))
-    environment(fr.form.) <- environment(fr.form) <- environment(formula)
-    ## model.frame.default looks for these objects in the environment
-    ## of the *formula* (see 'extras', which is anything passed in '...'),
-    ## so they have to be put there:
-    for (i in c("weights", "offset")) {
-        if (!eval(bquote(missing(x=.(i)))))
-            assign(i, get(i, parent.frame()), environment(fr.form))
-    }
-
-    res <- mkFormula(formula, fr.form., fr.form, mf, contrasts, control,
+    res <- mkFormula(formula, mf, contrasts, control,
                      allow.n = FALSE,
                      check_zero_rows = TRUE,
                      check_na_Zt = TRUE,
@@ -786,28 +782,13 @@ glFormula <- function(formula, data=NULL, family = gaussian,
     mf$drop.unused.levels <- TRUE
     mf[[1L]] <- quote(stats::model.frame)
 
-    ## substitute  special(x | f)  with  (x | f)
-    fr.form. <- noSpecials(formula, specials = lme4_specials, delete = FALSE)
-    ## substitute  (x | f)  and  (x || f)  with  (x + f)
-    fr.form <- sub_specials(fr.form., specials = c("|", "||"),
-                            keep_args = c(2L, 2L))
-    environment(fr.form.) <- environment(fr.form) <-
-        environment(formula)
-    ## model.frame.default looks for these objects in the environment
-    ## of the *formula* (see 'extras', which is anything passed in '...'),
-    ## so they have to be put there:
-    for (i in c("weights", "offset")) {
-        if (!eval(bquote(missing(x=.(i)))))
-            assign(i, get(i, parent.frame()), environment(fr.form))
-    }
-
     ## FIXME: adjust test for families with estimated scale parameter:
     ##   useSc is not defined yet/not defined properly?
     ##  if (useSc && maxlevels == n)
     ##          stop("number of levels of each grouping factor must be",
     ##                "greater than number of obs")
     ## TODO: allow.n = !useSc
-    res <- mkFormula(formula, fr.form., fr.form, mf, contrasts, control,
+    res <- mkFormula(formula, mf, contrasts, control,
                      allow.n = TRUE,
                      check_zero_rows = FALSE,
                      check_na_Zt = FALSE,
