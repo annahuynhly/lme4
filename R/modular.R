@@ -357,7 +357,8 @@ mkFormula <- function(formula, mf, contrasts, control,
     ## of the *formula* (see 'extras', which is anything passed in '...'),
     ## so they have to be put there:
     for (i in c("weights", "offset")) {
-        if (!eval(bquote(missing(x=.(i))), parent_env))
+        miss_i <- substitute(missing(ARG), list(ARG = as.name(i)))
+        if (!eval(miss_i, parent_env))
             assign(i, get(i, parent_env), environment(fr.form))
     }
 
