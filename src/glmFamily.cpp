@@ -190,6 +190,17 @@ namespace glm {
         }
     };
 
+    // Like boundexp but also clamps to < 1 so mu stays a valid probability
+    // (needed for binomial family with log link)
+    template<typename T>
+    struct boundexpBinomial : public std::function<T(T)> {
+        const T operator() (const T& x) const {
+            return T(std::max(std::numeric_limits<T>::epsilon(),
+                              std::min(1. - std::numeric_limits<T>::epsilon(),
+                                       exp(double(x)))));
+        }
+    };
+
 
     template<typename T>
     struct inverse : public std::function<T(T)> {
@@ -343,6 +354,12 @@ namespace glm {
     //@}
 
     //@{
+    const ArrayXd logBinomialLink::linkFun(const ArrayXd&  mu) const {return  mu.log();}
+    const ArrayXd logBinomialLink::linkInv(const ArrayXd& eta) const {return eta.unaryExpr(boundexpBinomial<double>());}
+    const ArrayXd logBinomialLink::muEta(  const ArrayXd& eta) const {return eta.unaryExpr(boundexp<double>());}
+    //@}
+
+    //@{
     const ArrayXd    logitLink::linkFun(const ArrayXd&  mu) const {return  mu.unaryExpr(logit<double>());}
     const ArrayXd    logitLink::linkInv(const ArrayXd& eta) const {return eta.unaryExpr(logitinv<double>());}
     const ArrayXd    logitLink::muEta(  const ArrayXd& eta) const {return eta.unaryExpr(logitmueta<double>());}
@@ -400,7 +417,8 @@ namespace glm {
         if (d_linknam == "cloglog")  {delete d_link; d_link = new cloglogLink(ll);}
         if (d_linknam == "identity") {delete d_link; d_link = new identityLink(ll);}
         if (d_linknam == "inverse")  {delete d_link; d_link = new inverseLink(ll);}
-        if (d_linknam == "log")      {delete d_link; d_link = new logLink(ll);}
+        if (d_linknam == "log" && d_family != "binomial") {delete d_link; d_link = new logLink(ll);}
+        if (d_linknam == "log" && d_family == "binomial") {delete d_link; d_link = new logBinomialLink(ll);}
         if (d_linknam == "logit")    {delete d_link; d_link = new logitLink(ll);}
         if (d_linknam == "probit")   {delete d_link; d_link = new probitLink(ll);}
 

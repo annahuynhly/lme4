@@ -151,6 +151,16 @@ namespace glm {
         const ArrayXd   muEta(const ArrayXd&) const;
     };
 
+    // log link clamped to (0,1) for binomial family (mu must stay a probability)
+    class logBinomialLink : public glmLink {
+    public:
+        logBinomialLink(Rcpp::List& ll) : glmLink(ll) {}
+
+        const ArrayXd linkFun(const ArrayXd&) const;
+        const ArrayXd linkInv(const ArrayXd&) const;
+        const ArrayXd   muEta(const ArrayXd&) const;
+    };
+
     class logitLink : public glmLink {
     public:
         logitLink(Rcpp::List& ll) : glmLink(ll) {}
