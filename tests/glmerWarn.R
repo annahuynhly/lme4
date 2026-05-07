@@ -2,21 +2,18 @@ if (.Platform$OS.type != "windows") {
     library(lme4)
     library(testthat)
 
-    ## [glmer(*, gaussian) warns to rather use lmer()]
-    m3 <- suppressWarnings(glmer(Reaction ~ Days + (Days|Subject), sleepstudy))
+    ## glmer(*, gaussian) now uses full GLMM machinery and returns glmerMod
+    m3 <- glmer(Reaction ~ Days + (Days|Subject), sleepstudy)
     m4 <- lmer(Reaction ~ Days + (Days|Subject), sleepstudy)
-    m5 <- suppressWarnings(glmer(Reaction ~ Days + (Days|Subject), sleepstudy,
-                                 family=gaussian))
+    m5 <- glmer(Reaction ~ Days + (Days|Subject), sleepstudy,
+                                 family=gaussian)
+    expect_is(m3, "glmerMod")
+    expect_is(m5, "glmerMod")
     expect_equal(fixef(m3),fixef(m5))
-    ## hack call -- comes out unimportantly different
-    m4@call[[1]] <- quote(lme4::lmer)
-    expect_equal(m3,m4)
-    expect_equal(m3,m5)
-
-    ## would like m3==m5 != m4 ??
-    expect_equal(VarCorr(m4), VarCorr(m5), tolerance = 1e-14)
-    print(th4 <- getME(m4,"theta"))
-    expect_equal(th4, getME(m5,"theta"), tolerance = 1e-14)
+    ## fixed effects should be approximately equal to lmer results
+    expect_equal(fixef(m3), fixef(m4), tolerance = 1e-4)
+    expect_equal(VarCorr(m3), VarCorr(m5))
+    expect_equal(getME(m3,"theta"), getME(m5,"theta"))
 
     ## glmer() - poly() + interaction
     if (requireNamespace("mlmRev")) withAutoprint({
