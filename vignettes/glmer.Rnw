@@ -112,7 +112,6 @@ library(lme4)
 library(ggplot2)
 theme_set(theme_bw())
 revguide <- guide_legend(reverse = TRUE)
-library(RColorBrewer)
 library(grid)
 library(gridExtra)
 zmargin <- theme(panel.margin=unit(0,"lines"))
@@ -691,6 +690,7 @@ average of about 6.5 binary observations (``moderate or severe'' vs ``none or mi
 an example where Gauss-Hermite quadrature is necessary for reliable results. In this case the
 conditional densities depart much more clearly from the standard normal (Figure~\ref{fig:toenailplot}; note the scale of the
 density ratios goes from 0 to 10, in contrast the maximum of 4 in Figure~\ref{fig:tfunc}).
+\cite{stringerAsymptoticsNumericalIntegration2022} and \cite{stringerExactGradientEvaluation2024} further explore the limitations of Laplace approximation.
 
 \begin{figure}[tbp]
   \centering
@@ -711,8 +711,9 @@ for a random sample of 9 patients from the toenail onychomycosis data set.}
 To use adaptive Gauss-Hermite quadrature for model fitting 
 in \code{glmer} models, set the argument \code{nAGQ}, the 
 number of quadrature points, to a value greater than 1.
-Increasing the number of nodes improves the accuracy of the likelihood 
-approximation at the expense of computation time. However, at present AGQ is only available 
+Increasing the number of nodes generally improves the accuracy of the likelihood 
+approximation at the expense of computation time --- although rounding errors
+may accumulate when using large numbers of quadrature points. At present, AGQ is only available 
 for models with a single scalar random effect. (The \code{GLMMadaptive} package implements
 AGQ for vector-valued random effect models, although it is still restricted to models with
 a single random effect.)
@@ -781,8 +782,8 @@ the precise provenance of these data sets is unclear, the \code{cbpp}
 data set matches the version held by the corresponding author of
 \cite{lesnoff_within-herd_2004}.
 
-<<cbppPlot,echo=FALSE,fig.cap="Incidence (proportion of cows becoming seropositive per observation period) vs. period. Colours show treatment category for each herd; point sizes reflect the number of seronegative cows at the start of each period.",fig.scap="Incidence">>=
-g0 <- ggplot(cbpp2,aes(period, incidence/size, colour=treatment)) +
+<<cbppPlot,echo=FALSE,fig.cap="Incidence (proportion of cows becoming seropositive per observation period) vs. period. Colours show treatment category for each herd; point sizes reflect the number of seronegative cows at the start of each period. Lines connect the sets of observations from each herd.",fig.scap="Incidence">>=
+g0 <- ggplot(cbpp2,aes(period, incidence/size, colour=treatment, shape = treatment)) +
     ## scale_y_continuous(limits = c(0, 1))+
     labs(x="Period",y="Proportional incidence")+
     scale_colour_brewer(palette="Dark2")
@@ -967,8 +968,8 @@ of GLMs. For mixed-effect models, it also assesses
 the normality of the distribution of conditional modes (Figure~\ref{fig:perf_chk_mod_cbpp}).
 
 <<perf_chk_mod_cbpp,fig.cap="Model diagnostics using \\code{performance::check\\_model}. The plot showcasing the normality of random effects (lower right panel) is the transpose of the right panel in Figure 6.",fig.height=10,echo=FALSE>>=
-check_model(gm1, check = c("reqq", "binned_residuals", 
-                                        "vif", "qq"))
+check_model(gm1, check = c("pp_check", "binned_residuals",
+                           "qq", "reqq"))
 @
 
 The \code{DHARMa} package is also compatible with \code{merMod} objects.
@@ -1132,7 +1133,7 @@ print(VarCorr(gm.ar1))
 
 For this particular model, a heterogeneous AR1 model (\code{ar1(..., hom = FALSE)}) results in a singular fit.
 
-See the \href{https://cran.r-project.org/web/packages/lme4/vignettes/covariance_structures.html}{lme4 covariance structures vignette}
+See the \href{https://CRAN.R-project.org/package=lme4/vignettes/covariance_structures.html}{lme4 covariance structures vignette}
 for more detail.
 
 \subsection{Contraception}
@@ -1381,6 +1382,17 @@ VarCorr(cm.cs)
 @
 
 \bibliography{glmer}
+
+\section{Package versions used}
+
+<<pkgs, echo=FALSE>>=
+pkglist <- c("lme4", "performance", "DHARMa", "see")
+pp <- sapply(pkglist, function(x)
+  sprintf("%s: %s", x, format(packageVersion(x))))
+ppp <- paste(pp, collapse  = "; ")
+@ 
+
+Compiled with \Sexpr{R.version.string} and package versions \Sexpr{pp}.
 
 \section{Appendix: derivation of PIRLS}
 
