@@ -205,6 +205,10 @@ mkNewReTrms <- function(object, newdata,
         rfd <- mfnew <- model.frame(object)
         fixed.na.action <- attr(mfnew,"na.action")
     } else {
+        ## GH #948: scale() stores a 1-column matrix; poly() with stored coefs
+        ## fails on matrix input. Convert single-column matrix columns to vectors.
+        newdata[] <- lapply(newdata, function(x)
+            if (is.matrix(x) && ncol(x) == 1L) drop(x) else x)
         if (!identical(na.action,na.pass)) {
             ## only need to re-evaluate for NAs if na.action != na.pass
             mfnew <- model.frame(delete.response(terms(object, fixed.only=TRUE)),

@@ -489,6 +489,22 @@ test_that("NA + re.form = NULL + simulate OK (GH #737)", {
     expect_equal(length(ss3), nrow(d))
 })
 
+test_that("simulate with scale() + poly() and re.form=NULL works (GH #948)", {
+    set.seed(101)
+    dd <- data.frame(
+        y = rpois(100, 2),
+        x = rnorm(100),
+        g = factor(rep(1:10, 10))
+    )
+    dd$xs <- scale(dd$x)
+    mod <- glmer(y ~ poly(xs, 2) + (1 | g), data = dd, family = poisson)
+    ## re.form=NULL should not error (GH #948: poly() failed on 1-col matrix from scale())
+    expect_silent(s1 <- simulate(mod, re.form = NULL))
+    expect_silent(s2 <- simulate(mod, re.form = NA))
+    expect_equal(nrow(s1), nrow(dd))
+    expect_equal(nrow(s2), nrow(dd))
+})
+
 ## GH 691 parts 1 and 2
 test_that("predict works with factors in left-out REs", {
     set.seed(101)
