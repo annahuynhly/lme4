@@ -69,6 +69,37 @@ test_that("predict on response scale", {
     expect_equal(p5, plogis(p0))
 })
 
+test_that("predict fixed-effect term contributions", {
+    p_terms <- predict(gm1, type="terms")
+    p_link0 <- predict(gm1, re.form=NA)
+    expect_equal(drop(rowSums(p_terms) + attr(p_terms, "constant")), p_link0)
+    expect_equal(colnames(p_terms), attr(terms(gm1, fixed.only=TRUE), "term.labels"))
+
+    p_period <- predict(gm1, type="terms", terms="period")
+    expect_equal(drop(p_period + attr(p_period, "constant")), p_link0)
+    expect_equal(ncol(p_period), 1)
+    expect_equal(colnames(p_period), "period")
+})
+
+test_that("predict terms type validation", {
+    expect_error(
+        predict(gm1, type="terms", random.only=TRUE),
+        "type='terms' is not meaningful with random.only=TRUE"
+    )
+    expect_error(
+        predict(gm1, terms="period"),
+        "'terms' argument is only valid when type = 'terms'"
+    )
+    expect_error(
+        predict(gm1, type="terms", terms="badterm"),
+        "unknown terms in 'terms' argument"
+    )
+    expect_error(
+        predict(gm1, type="terms", terms=999),
+        "numeric 'terms' argument must contain valid term indices"
+    )
+})
+
 test_that("predict with newdata and RE", {
 
     newdata <- with(cbpp,expand.grid(period=unique(period),herd=unique(herd)))

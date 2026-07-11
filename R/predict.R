@@ -379,9 +379,12 @@ levelfun <- function(x, nl.n, allow.new.levels=FALSE) {
 ##' @param re.form formula for random effects to condition on.  If \code{NULL},
 ##' include all random effects; if \code{NA} or \code{~0},
 ##' include no random effects
-##' @param terms a \code{\link{terms}} object - not used at present
+##' @param terms if \code{type = "terms"}, a \code{\link{terms}} object or
+##'    character/numeric vector selecting which fixed-effect terms to return;
+##'    ignored otherwise
 ##' @param type character string - either \code{"link"}, the default,
-##'    or \code{"response"} indicating the type of prediction object returned
+##'    \code{"response"} (inverse-link scale), or \code{"terms"} for
+##'    contributions of fixed-effect terms
 ##' @param allow.new.levels (logical) if FALSE (default), then any new levels
 ##'    (or NA values) detected in \code{newdata} will trigger an error; if TRUE, then
 ##'    the prediction will use the unconditional (population-level)
@@ -404,7 +407,7 @@ levelfun <- function(x, nl.n, allow.new.levels=FALSE) {
 predict.merMod <- function(object, newdata=NULL, newparams=NULL,
                            re.form=NULL,
                            random.only=FALSE,
-                           terms=NULL, type=c("link","response"),
+                           terms=NULL, type=c("link","response","terms"),
                            allow.new.levels=FALSE, na.action=na.pass,
                            se.fit = FALSE, ...) {
     ## FIXME: appropriate names for result vector?
@@ -440,13 +443,17 @@ predict.merMod <- function(object, newdata=NULL, newparams=NULL,
     if (...length() > 0) warning("unused arguments ignored")
 
     type <- match.arg(type)
-    if (!is.null(terms))
-        stop("terms functionality for predict not yet implemented")
+    if (random.only && type=="terms") {
+        stop("type='terms' is not meaningful with random.only=TRUE")
+    }
+    if (!is.null(terms) && type != "terms") {
+        stop("'terms' argument is only valid when type = 'terms'")
+    }
     if (!is.null(newparams))
         object <- setParams(object,newparams)
 
     if (is.null(newdata) && is.null(re.form) &&
-        is.null(newparams) && !random.only) {
+        is.null(newparams) && !random.only && type != "terms") {
         ## raw predict() call, just return fitted values
         ##   (inverse-link if appropriate)
         if (isLMM(object) || isNLMM(object)) {
@@ -576,6 +583,42 @@ predict.merMod <- function(object, newdata=NULL, newparams=NULL,
         }
     }
     pred <- napredict(fit.na.action, pred)
+
+    if (type == "terms") {
+        beta <- fixef(object)
+        asgn <- attr(X, "assign")
+        tt <- terms(object, fixed.only=TRUE)
+        term.labels <- attr(tt, "term.labels")
+        pterms <- matrix(0, nrow = nrow(X), ncol = length(term.labels),
+                         dimnames = list(names(pred), term.labels))
+        for (i in seq_along(term.labels)) {
+            wh <- which(asgn == i)
+            if (length(wh) > 0) {
+                pterms[, i] <- drop(X[, wh, drop=FALSE] %*% beta[wh])
+            }
+        }
+        constant <- pred - rowSums(pterms)
+        if (length(constant) > 1L && diff(range(constant)) == 0) {
+            constant <- constant[1]
+        }
+        if (!is.null(terms)) {
+            if (inherits(terms, "terms")) {
+                terms <- attr(terms, "term.labels")
+            } else if (is.numeric(terms)) {
+                if (any(!is.finite(terms)) || any(terms < 1L) ||
+                    any(terms > length(term.labels)) || any(terms != as.integer(terms))) {
+                    stop("numeric 'terms' argument must contain valid term indices")
+                }
+                terms <- term.labels[terms]
+            }
+            if (!all(terms %in% term.labels)) {
+                stop("unknown terms in 'terms' argument")
+            }
+            pterms <- pterms[, terms, drop=FALSE]
+        }
+        attr(pterms, "constant") <- constant
+        return(pterms)
+    }
 
     if (!se.fit) return(pred)
 

@@ -9,7 +9,7 @@
 \method{predict}{merMod}(object, newdata = NULL, newparams = NULL,
     re.form = NULL,
     random.only=FALSE, terms = NULL,
-    type = c("link", "response"), allow.new.levels = FALSE,
+    type = c("link", "response", "terms"), allow.new.levels = FALSE,
     na.action = na.pass,
     se.fit = FALSE,
     \dots)
@@ -27,9 +27,12 @@
     include no random effects.}
   \item{random.only}{(logical) ignore fixed effects, making predictions
     only using random effects?}
-  \item{terms}{a \code{\link{terms}} object - unused at present.}
-  \item{type}{character string - either \code{"link"}, the default, or
-    \code{"response"} indicating the type of prediction object returned.}
+  \item{terms}{if \code{type = "terms"}, a \code{\link{terms}} object or
+    character/numeric vector selecting which fixed-effect terms to return;
+    ignored otherwise.}
+  \item{type}{character string - either \code{"link"} (the default),
+    \code{"response"} (inverse-link scale), or \code{"terms"} for
+    contributions of fixed-effect terms.}
   \item{allow.new.levels}{logical if new levels (or NA values) in
     \code{newdata} are allowed. If FALSE (default), such new values in
     \code{newdata} will trigger an error; if TRUE, then the prediction
@@ -81,4 +84,3 @@ stopifnot(all.equal(vcov(fm)[1,1], 0.02564102564),
 		    unname( fitted(fm) [isel])))
 } % dontshow
 } % examples
-
