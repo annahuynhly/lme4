@@ -645,15 +645,38 @@ anova.merMod <- anovaLmer
 ##' @S3method as.function merMod
 as.function.merMod <- function(x, ...) {
     reCovs <- getReCovs(x)
-    rho <- list2env(list(resp  = x@resp$copy(),
-                         pp    = x@pp$copy(),
-                         lower = getLower(x),
-                         upper = getUpper(x),
-                         mkPar = mkMkPar(reCovs),
-                         mkTheta = mkMkTheta(reCovs)),
-                    parent=as.environment("package:lme4"))
+    is_glmm <- isGLMM(x)
+    pp <- x@pp$copy()
+    nAGQ <- if (is_glmm) x@devcomp$dims[["nAGQ"]] else 0L
+    lower <- getLower(x)
+    upper <- getUpper(x)
+    devlist <- c(list(resp    = x@resp$copy(),
+                      pp      = pp,
+                      mkPar   = mkMkPar(reCovs),
+                      mkTheta = mkMkTheta(reCovs)),
+                 if (is_glmm) {
+                     dc <- x@devcomp
+                     list(tolPwrss    = dc$cmp[["tolPwrss"]],
+                           compDev     = dc$dims[["compDev"]],
+                           nAGQ        = nAGQ,
+                           maxit       = 100L,
+                           lp0         = pp$linPred(1),
+                           baseOffset  = forceCopy(x@resp$offset),
+                           pwrssUpdate = glmerPwrssUpdate,
+                           GQmat       = GHrule(nAGQ),
+                          fac         = x@flist[[1]],
+                          verbose     = 0L,
+                          dpars       = seq_len(getParLength(x)))
+                 })
+    if (is_glmm && nAGQ > 0L) {
+        lower <- c(lower, rep(-Inf, length(pp$beta0)))
+        upper <- c(upper, rep( Inf, length(pp$beta0)))
+    }
+    devlist$lower <- lower
+    devlist$upper <- upper
+    rho <- list2env(devlist, parent=as.environment("package:lme4"))
     ## FIXME: extract verbose [, maxit] and control
-    mkdevfun(rho, getME(x, "devcomp")$dims[["nAGQ"]], ...)
+    mkdevfun(rho, nAGQ, ...)
 }
 
 ## coef() method for all kinds of "mer", "*merMod", ... objects
