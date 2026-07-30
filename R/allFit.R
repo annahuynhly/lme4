@@ -174,45 +174,18 @@ allFit <- function(object, meth.tab = NULL,
             ctrl$optCtrl <- sanitize(ctrl$optCtrl,
                                      opt.ctrls[[optimizer[..i]]])
             ctrl <- do.call(if(isGLMM(object)) glmerControl else lmerControl, ctrl)
-            ## need to stick ctrl in formula env so it can be found ...
-            form <- formula(object)
-            env <- environment(form)
-            tmp_env <- new.env(parent = env)
-            # temporarily changing the environment
-            environment(form) <- tmp_env
-            assign("ctrl", ctrl, envir = tmp_env, inherits = FALSE)
-            # Using the MLE as a starting point
-            if (start_from_mle) {
-              if (isGLMM(object)) {
-                pars <- getME(object, c("theta", "fixef"))
-              } else {
-                pars <- getME(object, "theta")
-                if(isNLMM(object)){
-                  warning("results are not guaranteed when using nlmer")
+            fit_once <- function() {
+                if (start_from_mle && isNLMM(object)) {
+                    warning("results are not guaranteed when using nlmer")
                 }
-              }
-              assign("pars", pars, envir = tmp_env, inherits = FALSE)
+                refit(object, control = ctrl)
             }
-            
-            fit_call <- if (start_from_mle) {
-              quote(update(object, start = pars, control = ctrl))
-            } else {
-              quote(update(object, control = ctrl))
-            }
-            
             tt <- system.time(
-              rr <- if (catch.errs) {
-                      tryCatch(eval(fit_call), error = function(e) e)
-                    } else {
-                      eval(fit_call)
-                    }
+              rr <- if (catch.errs) tryCatch(fit_once(), error = function(e) e) else fit_once()
             )
 
             attr(rr, "optCtrl") <- ctrl$optCtrl # contains crucial info here
             attr(rr, "time") <- tt  # store timing info
-            
-            ## restore original values to environment of the object
-            on.exit({ environment(form) <- env }, add = TRUE)
             
             if (verbose) {
               if (inherits(rr,"error")) {
